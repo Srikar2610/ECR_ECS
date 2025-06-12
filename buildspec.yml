@@ -11,7 +11,7 @@ phases:
       - REGION=us-east-1
       - REPO_NAME=spring
       - IMAGE_TAG=spring-app-fixed
-      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.public.ecr.aws.$REGION.amazonaws.com
 
   build:
     commands:
