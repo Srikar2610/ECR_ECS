@@ -1,32 +1,34 @@
 version: 0.2
-
+ 
 phases:
   pre_build:
     commands:
       - echo Installing dependencies...
       - yum install -y jq maven
-      - echo Logging in to Amazon ECR Public...
-      - docker login -u AWS -p $(aws ecr-public get-login-password --region us-east-1) public.ecr.aws
-
-      - REPO_NAME=spring
-      - IMAGE_TAG=spring-app-fixed
-      - PUBLIC_REPO_URI=public.ecr.aws/k2l2o0v7/$REPO_NAME
-
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - ACCOUNT_ID=026090550003
+      - REGION=us-east-1
+      - REPO_NAME=spring-ecr
+      - IMAGE_TAG=latest
+      - ECR_URI=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+ 
   build:
     commands:
       - echo Building the JAR file...
       - mvn clean install
-      - echo Building the Docker image...
-      - docker build -t $REPO_NAME .
-      - docker tag $REPO_NAME:latest $PUBLIC_REPO_URI:$IMAGE_TAG
-
+      - echo Building the Docker image... 
+      - docker build -t $ECR_URI:$IMAGE_TAG .
+ 
   post_build:
     commands:
-      - echo Pushing Docker image to Amazon ECR Public...
-      - docker push $PUBLIC_REPO_URI:$IMAGE_TAG
+      - echo Pushing Docker image to Amazon ECR...
+      - docker push $ECR_URI:$IMAGE_TAG
       - echo Writing imagedefinitions.json...
-      - printf '[{"name":"spring-cluster","imageUri":"%s:%s"}]' $PUBLIC_REPO_URI $IMAGE_TAG > imagedefinitions.json
-
+      - printf '[{"name":"spring-container","imageUri":"%s.dkr.ecr.%s.amazonaws.com/%s:%s"}]' $ACCOUNT_ID $REGION $REPO_NAME $IMAGE_TAG > imagedefinitions.json
+      - echo Writing appspec.yml...
+ 
 artifacts:
   files:
     - imagedefinitions.json
